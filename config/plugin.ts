@@ -3,8 +3,12 @@ import { EggPlugin } from 'egg';
 const plugin: EggPlugin = {
   mysql: {
     enable: true,
-    package: 'egg-mysql'
-  }
+    package: 'egg-mysql',
+  },
+  cors: {
+    enable: true,
+    package: 'egg-cors',
+  },
   // static: true,
   // nunjucks: {
   //   enable: true,

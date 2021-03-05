@@ -4,15 +4,21 @@ import { Service } from 'egg';
  * Test Service
  */
 export default class Test extends Service {
-
-  /**
-   * sayHi to you
-   * @param name - your name
-   */
-  public async sayHi(name: string) {
-    return `hi, ${name}`;
+  async createAnEbook(data: any) {
+    try {
+      await this.app.mysql.insert('Title', data);
+    } catch (err) {
+      throw new Error(err.sqlMessage);
+    }
   }
-  async status() {
-    return this.app.mysql.select('test')
+
+  async createAChapter(data: any) {
+    console.log(data);
+    try {
+      await this.app.mysql.insert('Item', data);
+    } catch (err) {
+      console.log(err);
+      throw new Error(err.sqlMessage);
+    }
   }
 }

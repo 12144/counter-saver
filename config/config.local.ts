@@ -15,7 +15,7 @@ export default () => {
         // 数据库名
         database: 'Counter',
       },
-    }
+    },
   };
   return config;
 };

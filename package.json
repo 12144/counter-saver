@@ -1,5 +1,5 @@
 {
-  "name": "CounterSaver",
+  "name": "counter-saver",
   "version": "1.0.0",
   "description": "Counter服务端，接收采集的使用数据",
   "private": true,
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "egg": "^2.6.1",
+    "egg-cors": "^2.2.3",
     "egg-mysql": "^3.0.0",
     "egg-scripts": "^2.6.0"
   },
