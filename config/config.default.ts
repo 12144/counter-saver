@@ -7,11 +7,7 @@ export default (appInfo: EggAppInfo) => {
         enable: false,
       },
     },
-    cors: {
-      credentials: true,
-      origin: 'http://localhost:3000',
-      allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTION',
-    },
+    proxy: true,
   };
 
   // override config from framework / plugin

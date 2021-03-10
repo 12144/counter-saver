@@ -135,6 +135,8 @@ export default class Upload extends Service {
         titleExist = false;
       }
 
+      console.log('data', data);
+
       this.dealNoLicense(itemMetricRecord, titleMetricRecord, data);
       this.dealLimitExceeded(itemMetricRecord, titleMetricRecord, data);
       await this.dealInvestigations(itemMetricRecord, titleMetricRecord, data);
