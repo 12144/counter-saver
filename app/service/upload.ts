@@ -1,20 +1,17 @@
 import { Service } from 'egg';
 
 interface UploadData {
-  user_id: string;
-  item_id: string;
-  parent_id: string;
-  requests: number;
-  investigations: number;
+  item_id?: string,
+  title_id?: string;
+  platform_id?: string;
+  unique_item_requests: number;
+  total_item_requests: number;
+  unique_item_investigations: number;
+  total_item_investigations: number;
   no_license: number;
   limit_exceeded: number;
-}
-
-enum MetricTypeTable {
-  UNIQUE_ITEM_REQUESTS = 'Unique_Item_Requests',
-  UNIQUE_ITEM_INVESTIGATIONS = 'Unique_Item_Investigations',
-  UNIQUE_TITLE_REQUESTS = 'Unique_Title_Requests',
-  UNIQUE_TITLE_INVESTIGATIONS = 'Unique_Title_Investigations'
+  unique_title_requests?: number;
+  unique_title_investigations?: number;
 }
 
 // interface TitleValue {
@@ -54,34 +51,35 @@ enum MetricTypeTable {
 //   parent_id: string;
 // }
 
-interface TitleMetricValue {
-  title_id: string;
-  month: string,
-  unique_title_investigations: number;
-  unique_title_requests: number;
-  total_item_investigations: number;
-  unique_item_investigations: number;
-  total_item_requests: number;
-  unique_item_requests: number;
-  no_license: number;
-  limit_exceeded: number;
-}
+// interface TitleMetricValue {
+//   title_id: string;
+//   month: string,
+//   unique_title_investigations: number;
+//   unique_title_requests: number;
+//   total_item_investigations: number;
+//   unique_item_investigations: number;
+//   total_item_requests: number;
+//   unique_item_requests: number;
+//   no_license: number;
+//   limit_exceeded: number;
+// }
 
-interface ItemMetricValue {
-  item_id: string,
-  month: string,
-  total_item_investigations: number;
-  unique_item_investigations: number;
-  total_item_requests: number;
-  unique_item_requests: number;
-  no_license: number;
-  limit_exceeded: number;
-}
+// interface ItemMetricValue {
+//   item_id: string,
+//   month: string,
+//   total_item_investigations: number;
+//   unique_item_investigations: number;
+//   total_item_requests: number;
+//   unique_item_requests: number;
+//   no_license: number;
+//   limit_exceeded: number;
+// }
 
 function initItem(item_id:string, month:string) {
   return {
     item_id,
     month,
+    access_method: 'Regular',
     total_item_investigations: 0,
     unique_item_investigations: 0,
     total_item_requests: 0,
@@ -95,6 +93,23 @@ function initTitle(title_id: string, month: string) {
   return {
     title_id,
     month,
+    access_method: 'Regular',
+    total_item_investigations: 0,
+    total_item_requests: 0,
+    unique_item_investigations: 0,
+    unique_item_requests: 0,
+    unique_title_investigations: 0,
+    unique_title_requests: 0,
+    no_license: 0,
+    limit_exceeded: 0,
+  };
+}
+
+function initPlatform(platform_id: string, month: string) {
+  return {
+    platform_id,
+    month,
+    access_method: 'Regular',
     total_item_investigations: 0,
     total_item_requests: 0,
     unique_item_investigations: 0,
@@ -114,112 +129,107 @@ export default class Upload extends Service {
     * 对于Total_Item指标累加count的值即可
     */
   async index(dataList: UploadData[]) {
-    const mysql = this.app.mysql;
     const now = new Date();
     const month = `${now.getFullYear()}-${now.getMonth() + 1}-01`;
+    // to-do 判断access_method是不是TDM
+    const access_method = 'Regular';
 
     for (let i = 0; i < dataList.length; i++) {
-      let itemExist = true,
-        titleExist = true;
       const data = dataList[i];
+      console.log(data);
       // 不需要检查user, item, title是否存在，因为有外键约束，如果不存在插入记录时会报错
-      let itemMetricRecord = await mysql.get('Item_Metric', { item_id: data.item_id, month });
-      if (!itemMetricRecord) {
-        itemMetricRecord = initItem(data.item_id, month);
-        itemExist = false;
-      }
-
-      let titleMetricRecord = await mysql.get('Title_Metric', { title_id: data.parent_id, month });
-      if (!titleMetricRecord) {
-        titleMetricRecord = initTitle(data.parent_id, month);
-        titleExist = false;
-      }
-
-      console.log('data', data);
-
-      this.dealNoLicense(itemMetricRecord, titleMetricRecord, data);
-      this.dealLimitExceeded(itemMetricRecord, titleMetricRecord, data);
-      await this.dealInvestigations(itemMetricRecord, titleMetricRecord, data);
-      await this.dealRequests(itemMetricRecord, titleMetricRecord, data);
-
-      if (itemExist) {
-        mysql.update('Item_Metric', itemMetricRecord, {
-          where: { item_id: itemMetricRecord.item_id, month },
-        });
+      if (data.item_id) {
+        this.dealItemMetric(data, month, access_method);
+      } else if (data.title_id) {
+        this.dealTitleMetric(data, month, access_method);
       } else {
-        mysql.insert('Item_Metric', itemMetricRecord);
-      }
-
-      if (titleExist) {
-        mysql.update('Title_Metric', titleMetricRecord, {
-          where: { title_id: titleMetricRecord.title_id, month },
-        });
-      } else {
-        mysql.insert('Title_Metric', titleMetricRecord);
+        this.dealPlatformMetric(data, month, access_method);
       }
     }
   }
 
-  dealNoLicense(itemRecord: ItemMetricValue, titleRecord: TitleMetricValue, data: UploadData): void {
-    itemRecord.no_license += data.no_license;
-    titleRecord.no_license += data.no_license;
-  }
-
-  dealLimitExceeded(itemRecord: ItemMetricValue, titleRecord: TitleMetricValue, data: UploadData): void {
-    itemRecord.limit_exceeded += data.limit_exceeded;
-    titleRecord.limit_exceeded += data.limit_exceeded;
-  }
-
-  async dealInvestigations(itemRecord: ItemMetricValue, titleRecord: TitleMetricValue, data: UploadData) {
-    if (!data.investigations) return;
-    itemRecord.total_item_investigations += data.investigations;
-    titleRecord.total_item_investigations += data.investigations;
-    if (await this.insert(data.user_id, data.item_id, MetricTypeTable.UNIQUE_ITEM_INVESTIGATIONS)) {
-      itemRecord.unique_item_investigations++;
-      titleRecord.unique_item_investigations++;
-    }
-    if (await this.insert(data.user_id, data.parent_id, MetricTypeTable.UNIQUE_TITLE_INVESTIGATIONS)) {
-      titleRecord.unique_title_investigations++;
-    }
-  }
-
-  async dealRequests(itemRecord: ItemMetricValue, titleRecord: TitleMetricValue, data: UploadData) {
-    if (!data.requests) return;
-    itemRecord.total_item_requests += data.requests;
-    titleRecord.total_item_requests += data.requests;
-    if (await this.insert(data.user_id, data.item_id, MetricTypeTable.UNIQUE_ITEM_REQUESTS)) {
-      itemRecord.unique_item_requests++;
-      titleRecord.unique_item_requests++;
-    }
-    if (await this.insert(data.user_id, data.parent_id, MetricTypeTable.UNIQUE_TITLE_REQUESTS)) {
-      titleRecord.unique_title_requests++;
-    }
-  }
-
-  /**
-   * 唯一类指标插入一条记录
-   * @param user_id 用户标识
-   * @param item_id 项标识
-   * @param table 表名
-   * @return {boolean} true插入成功，false已存在数据不插入
-   */
-  async insert(user_id: string, item_id: string, table: MetricTypeTable) {
-    let value;
+  async dealItemMetric(data: UploadData, month: string, access_method: string): Promise<void> {
     const mysql = this.app.mysql;
+    let itemExist = true;
 
-    if (table === MetricTypeTable.UNIQUE_ITEM_INVESTIGATIONS
-      || table === MetricTypeTable.UNIQUE_ITEM_REQUESTS) {
-      value = { user_id, item_id };
+    let itemMetricRecord = await mysql.get('Item_Metric', { item_id: data.item_id, month, access_method });
+    if (!itemMetricRecord) {
+      itemMetricRecord = initItem(data.item_id!, month);
+      itemExist = false;
+    }
+
+    console.log(itemMetricRecord);
+
+    itemMetricRecord.total_item_requests += data.total_item_requests;
+    itemMetricRecord.total_item_investigations += data.total_item_investigations;
+    itemMetricRecord.unique_item_requests += data.unique_item_requests;
+    itemMetricRecord.unique_item_investigations += data.unique_item_investigations;
+    itemMetricRecord.no_license += data.no_license;
+    itemMetricRecord.limit_exceeded += data.limit_exceeded;
+
+    if (itemExist) {
+      mysql.update('Item_Metric', itemMetricRecord, {
+        where: { item_id: itemMetricRecord.item_id, month, access_method },
+      });
     } else {
-      value = { user_id, title_id: item_id };
+      mysql.insert('Item_Metric', itemMetricRecord);
+    }
+  }
+
+  async dealTitleMetric(data: UploadData, month: string, access_method: string):Promise<void> {
+    const mysql = this.app.mysql;
+    let titleExist = true;
+
+    let titleMetricRecord = await mysql.get('Title_Metric', { title_id: data.title_id, month, access_method });
+    if (!titleMetricRecord) {
+      titleMetricRecord = initTitle(data.title_id!, month);
+      titleExist = false;
     }
 
-    const record = await mysql.get(table, value);
-    if (record) {
-      return false;
+    titleMetricRecord.total_item_requests += data.total_item_requests;
+    titleMetricRecord.total_item_investigations += data.total_item_investigations;
+    titleMetricRecord.unique_item_requests += data.unique_item_requests;
+    titleMetricRecord.unique_item_investigations += data.unique_item_investigations;
+    titleMetricRecord.unique_title_requests += data.unique_title_requests!;
+    titleMetricRecord.unique_title_investigations += data.unique_title_investigations!;
+    titleMetricRecord.no_license += data.no_license;
+    titleMetricRecord.limit_exceeded += data.limit_exceeded;
+
+    if (titleExist) {
+      mysql.update('Title_Metric', titleMetricRecord, {
+        where: { title_id: titleMetricRecord.title_id, month, access_method },
+      });
+    } else {
+      mysql.insert('Title_Metric', titleMetricRecord);
+    }
+  }
+
+  async dealPlatformMetric(data: UploadData, month: string, access_method: string):Promise<void> {
+    const mysql = this.app.mysql;
+    let platformExist = true;
+
+    let platformMetricRecord = await mysql.get('Platform_Metric', { platform_id: data.platform_id, month, access_method });
+
+    if (!platformMetricRecord) {
+      platformMetricRecord = initPlatform(data.platform_id!, month);
+      platformExist = false;
     }
 
-    await mysql.insert(table, value);
-    return true;
+    platformMetricRecord.total_item_requests += data.total_item_requests;
+    platformMetricRecord.total_item_investigations += data.total_item_investigations;
+    platformMetricRecord.unique_item_requests += data.unique_item_requests;
+    platformMetricRecord.unique_item_investigations += data.unique_item_investigations;
+    platformMetricRecord.unique_title_requests += data.unique_title_requests!;
+    platformMetricRecord.unique_title_investigations += data.unique_title_investigations!;
+    platformMetricRecord.no_license += data.no_license;
+    platformMetricRecord.limit_exceeded += data.limit_exceeded;
+
+    if (platformExist) {
+      mysql.update('Platform_Metric', platformMetricRecord, {
+        where: { platform_id: platformMetricRecord.platform_id, month, access_method },
+      });
+    } else {
+      mysql.insert('Platform_Metric', platformMetricRecord);
+    }
   }
 }

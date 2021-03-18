@@ -21,4 +21,13 @@ export default class Test extends Service {
       throw new Error(err.sqlMessage);
     }
   }
+  async createAPlatform(data: any) {
+    console.log(data);
+    try {
+      await this.app.mysql.insert('Platform', data);
+    } catch (err) {
+      console.log(err);
+      throw new Error(err.sqlMessage);
+    }
+  }
 }
