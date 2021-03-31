@@ -136,7 +136,6 @@ export default class Upload extends Service {
 
     for (let i = 0; i < dataList.length; i++) {
       const data = dataList[i];
-      console.log(data);
       // 不需要检查user, item, title是否存在，因为有外键约束，如果不存在插入记录时会报错
       if (data.item_id) {
         this.dealItemMetric(data, month, access_method);
@@ -157,8 +156,6 @@ export default class Upload extends Service {
       itemMetricRecord = initItem(data.item_id!, month);
       itemExist = false;
     }
-
-    console.log(itemMetricRecord);
 
     itemMetricRecord.total_item_requests += data.total_item_requests;
     itemMetricRecord.total_item_investigations += data.total_item_investigations;

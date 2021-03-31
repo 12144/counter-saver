@@ -13,7 +13,6 @@ export default class Test extends Service {
   }
 
   async createAChapter(data: any) {
-    console.log(data);
     try {
       await this.app.mysql.insert('Item', data);
     } catch (err) {
@@ -22,7 +21,6 @@ export default class Test extends Service {
     }
   }
   async createAPlatform(data: any) {
-    console.log(data);
     try {
       await this.app.mysql.insert('Platform', data);
     } catch (err) {
