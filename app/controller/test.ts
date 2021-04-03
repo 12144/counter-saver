@@ -5,6 +5,39 @@ export default class TestController extends Controller {
     const { ctx } = this;
     ctx.body = 'hi, eggg';
   }
+
+  public async initTest() {
+    const { ctx } = this;
+    try {
+      await ctx.service.test.initTest();
+      ctx.body = {
+        code: 200,
+        message: 'ok!',
+      };
+    } catch (err) {
+      ctx.body = {
+        code: 500,
+        message: err.message,
+      };
+    }
+  }
+
+  public async clearTest() {
+    const { ctx } = this;
+    try {
+      await ctx.service.test.clearTest();
+      ctx.body = {
+        code: 200,
+        message: 'ok!',
+      };
+    } catch (err) {
+      ctx.body = {
+        code: 500,
+        message: err.message,
+      };
+    }
+  }
+
   public async createTitle() {
     const { ctx } = this;
     try {
