@@ -34,7 +34,32 @@ export default class Test extends Service {
 
   async clearTest() {
     try {
-      // await this.app.mysql.insert('Title', data);
+      testPlatformData.forEach(async platform => {
+        await this.app.mysql.delete('Platform_Metric', {
+          platform_id: platform.id,
+        });
+        await this.app.mysql.delete('Platform', {
+          id: platform.id,
+        });
+      });
+
+      testTitleData.forEach(async title => {
+        await this.app.mysql.delete('Title_Metric', {
+          title_id: title.id,
+        });
+        await this.app.mysql.delete('Title', {
+          id: title.id,
+        });
+      });
+
+      testItemData.forEach(async item => {
+        await this.app.mysql.delete('Item_Metric', {
+          item_id: item.id,
+        });
+        await this.app.mysql.delete('Item', {
+          id: item.id,
+        });
+      });
     } catch (err) {
       throw new Error(err.sqlMessage);
     }
