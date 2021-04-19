@@ -12,6 +12,25 @@ export const testPlatformData = [
   },
 ];
 
+export const testDatabaseData = [
+  {
+    id: 'database1',
+    database: 'database1',
+    data_type: 'Book',
+    platform: 'platform1',
+    publisher: 'data publisher',
+    publisher_id: 'ISNI=9878309',
+  },
+  {
+    id: 'database2',
+    database: 'database2',
+    data_type: 'Book',
+    platform: 'platform1',
+    publisher: 'data publisher',
+    publisher_id: 'ISNI=9878310',
+  },
+];
+
 export const testTitleData = [
   {
     title: 'title1-1',
@@ -48,7 +67,7 @@ export const testTitleData = [
   {
     title: 'title2-1',
     doi: '92.664/4340',
-    id: 'test3972',
+    id: 'test3971',
     isbn: '826-6-57-303392-6',
     print_issn: '5006-7979',
     online_issn: '2347-3157',

@@ -1,5 +1,5 @@
 import { Service } from 'egg';
-import { testPlatformData, testTitleData, testItemData } from './testData';
+import { testPlatformData, testTitleData, testItemData, testDatabaseData } from './testData';
 /**
  * Test Service
  */
@@ -11,6 +11,13 @@ export default class Test extends Service {
           platform_id: platform.id,
         });
         await this.createAPlatform(platform);
+      });
+
+      testDatabaseData.forEach(async database => {
+        await this.app.mysql.delete('Database_Metric', {
+          database_id: database.id,
+        });
+        await this.createADatabase(database);
       });
 
       testTitleData.forEach(async title => {
@@ -40,6 +47,15 @@ export default class Test extends Service {
         });
         await this.app.mysql.delete('Platform', {
           id: platform.id,
+        });
+      });
+
+      testDatabaseData.forEach(async database => {
+        await this.app.mysql.delete('Database_Metric', {
+          database_id: database.id,
+        });
+        await this.app.mysql.delete('Database', {
+          id: database.id,
         });
       });
 
@@ -92,6 +108,18 @@ export default class Test extends Service {
     try {
       const query = `
         replace into Counter.Platform(${Object.keys(data).join(',')}) values (${Object.values(data).map(str => `'${str}'`).join(',')})
+      `;
+      await this.app.mysql.query(query);
+    } catch (err) {
+      console.log(err);
+      throw new Error(err.sqlMessage);
+    }
+  }
+
+  async createADatabase(data: any) {
+    try {
+      const query = `
+        replace into Counter.\`Database\`(${Object.keys(data).map(name => (name === 'database' ? '`database`' : name)).join(',')}) values (${Object.values(data).map(str => `'${str}'`).join(',')})
       `;
       await this.app.mysql.query(query);
     } catch (err) {

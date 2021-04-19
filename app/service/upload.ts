@@ -4,6 +4,7 @@ interface UploadData {
   item_id?: string,
   title_id?: string;
   platform_id?: string;
+  database_id?: string;
   unique_item_requests: number;
   total_item_requests: number;
   unique_item_investigations: number;
@@ -120,14 +121,26 @@ function initPlatform(platform_id: string, month: string) {
     limit_exceeded: 0,
   };
 }
+
+function initDatabase(database_id: string, month: string) {
+  return {
+    database_id,
+    month,
+    access_method: 'Regular',
+    total_item_investigations: 0,
+    total_item_requests: 0,
+    unique_item_investigations: 0,
+    unique_item_requests: 0,
+    unique_title_investigations: 0,
+    unique_title_requests: 0,
+    no_license: 0,
+    limit_exceeded: 0,
+  };
+}
 /**
  * Test Service
  */
 export default class Upload extends Service {
-  /**
-    * 对于Unique_Item和Unique_Title类的指标要判断用户是否已经执行过这个操作，如果已经执行过则需要忽略
-    * 对于Total_Item指标累加count的值即可
-    */
   async index(dataList: UploadData[]) {
     const now = new Date();
     const month = `${now.getFullYear()}-${now.getMonth() + 1}-01`;
@@ -141,6 +154,8 @@ export default class Upload extends Service {
         this.dealItemMetric(data, month, access_method);
       } else if (data.title_id) {
         this.dealTitleMetric(data, month, access_method);
+      } else if (data.database_id) {
+        this.dealDatabaseMetric(data, month, access_method);
       } else {
         this.dealPlatformMetric(data, month, access_method);
       }
@@ -227,6 +242,35 @@ export default class Upload extends Service {
       });
     } else {
       mysql.insert('Platform_Metric', platformMetricRecord);
+    }
+  }
+
+  async dealDatabaseMetric(data: UploadData, month: string, access_method: string):Promise<void> {
+    const mysql = this.app.mysql;
+    let databaseExist = true;
+
+    let databaseMetricRecord = await mysql.get('Database_Metric', { database_id: data.database_id, month, access_method });
+
+    if (!databaseMetricRecord) {
+      databaseMetricRecord = initDatabase(data.database_id!, month);
+      databaseExist = false;
+    }
+
+    databaseMetricRecord.total_item_requests += data.total_item_requests;
+    databaseMetricRecord.total_item_investigations += data.total_item_investigations;
+    databaseMetricRecord.unique_item_requests += data.unique_item_requests;
+    databaseMetricRecord.unique_item_investigations += data.unique_item_investigations;
+    databaseMetricRecord.unique_title_requests += data.unique_title_requests!;
+    databaseMetricRecord.unique_title_investigations += data.unique_title_investigations!;
+    databaseMetricRecord.no_license += data.no_license;
+    databaseMetricRecord.limit_exceeded += data.limit_exceeded;
+
+    if (databaseExist) {
+      mysql.update('Database_Metric', databaseMetricRecord, {
+        where: { database_id: databaseMetricRecord.database_id, month, access_method },
+      });
+    } else {
+      mysql.insert('Database_Metric', databaseMetricRecord);
     }
   }
 }
