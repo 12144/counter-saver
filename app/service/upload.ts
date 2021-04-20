@@ -13,6 +13,7 @@ interface UploadData {
   limit_exceeded: number;
   unique_title_requests?: number;
   unique_title_investigations?: number;
+  searches_platform?: number;
 }
 
 // interface TitleValue {
@@ -119,6 +120,7 @@ function initPlatform(platform_id: string, month: string) {
     unique_title_requests: 0,
     no_license: 0,
     limit_exceeded: 0,
+    searches_platform: 0,
   };
 }
 
@@ -235,6 +237,7 @@ export default class Upload extends Service {
     platformMetricRecord.unique_title_investigations += data.unique_title_investigations!;
     platformMetricRecord.no_license += data.no_license;
     platformMetricRecord.limit_exceeded += data.limit_exceeded;
+    platformMetricRecord.searches_platform += data.searches_platform;
 
     if (platformExist) {
       mysql.update('Platform_Metric', platformMetricRecord, {
