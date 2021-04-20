@@ -14,6 +14,9 @@ interface UploadData {
   unique_title_requests?: number;
   unique_title_investigations?: number;
   searches_platform?: number;
+  searches_regular?: number;
+  searches_automated?: number;
+  searches_federated?: number;
 }
 
 // interface TitleValue {
@@ -137,6 +140,9 @@ function initDatabase(database_id: string, month: string) {
     unique_title_requests: 0,
     no_license: 0,
     limit_exceeded: 0,
+    searches_regular: 0,
+    searches_automated: 0,
+    searches_federated: 0,
   };
 }
 /**
@@ -267,6 +273,9 @@ export default class Upload extends Service {
     databaseMetricRecord.unique_title_investigations += data.unique_title_investigations!;
     databaseMetricRecord.no_license += data.no_license;
     databaseMetricRecord.limit_exceeded += data.limit_exceeded;
+    databaseMetricRecord.searches_regular += data.searches_regular;
+    databaseMetricRecord.searches_automated += data.searches_automated;
+    databaseMetricRecord.searches_federated += data.searches_federated;
 
     if (databaseExist) {
       mysql.update('Database_Metric', databaseMetricRecord, {
